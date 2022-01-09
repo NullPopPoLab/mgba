@@ -707,7 +707,7 @@ bool retro_load_game(const struct retro_game_info* game) {
 #ifdef M_CORE_GBA
 	if (core->platform(core) == mPLATFORM_GBA) {
 		core->setPeripheral(core, mPERIPH_GBA_LUMINANCE, &lux);
-		biosName = "gba_bios.bin";
+		biosName = "gbx/gba_bios.bin";
 
 	}
 #endif
@@ -735,14 +735,14 @@ bool retro_load_game(const struct retro_game_info* game) {
 		switch (gb->model) {
 		case GB_MODEL_AGB:
 		case GB_MODEL_CGB:
-			biosName = "gbc_bios.bin";
+			biosName = "gbx/gbc_bios.bin";
 			break;
 		case GB_MODEL_SGB:
-			biosName = "sgb_bios.bin";
+			biosName = "gbx/sgb_bios.bin";
 			break;
 		case GB_MODEL_DMG:
 		default:
-			biosName = "gb_bios.bin";
+			biosName = "gbx/gb_bios.bin";
 			break;
 		}
 	}
