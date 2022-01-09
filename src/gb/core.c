@@ -536,15 +536,15 @@ static void _GBCoreReset(struct mCore* core) {
 			switch (gb->model) {
 			case GB_MODEL_DMG:
 			case GB_MODEL_MGB: // TODO
-				strncat(path, PATH_SEP "gb_bios.bin", PATH_MAX - strlen(path));
+				strncat(path, PATH_SEP "gbx/gb_bios.bin", PATH_MAX - strlen(path));
 				break;
 			case GB_MODEL_SGB:
 			case GB_MODEL_SGB2: // TODO
-				strncat(path, PATH_SEP "sgb_bios.bin", PATH_MAX - strlen(path));
+				strncat(path, PATH_SEP "gbx/sgb_bios.bin", PATH_MAX - strlen(path));
 				break;
 			case GB_MODEL_CGB:
 			case GB_MODEL_AGB:
-				strncat(path, PATH_SEP "gbc_bios.bin", PATH_MAX - strlen(path));
+				strncat(path, PATH_SEP "gbx/gbc_bios.bin", PATH_MAX - strlen(path));
 				break;
 			default:
 				break;
