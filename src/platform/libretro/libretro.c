@@ -29,6 +29,8 @@
 
 #include "libretro_core_options.h"
 
+#define CUSTOM_VERSION "+NC41"
+
 #define GB_SAMPLES 512
 #define SAMPLE_RATE 32768
 /* An alpha factor of 1/180 is *somewhat* equivalent
@@ -401,13 +403,19 @@ void retro_set_input_state(retro_input_state_t input) {
 }
 
 void retro_get_system_info(struct retro_system_info* info) {
+
+	static char buf[256]={0};
+	strncpy(buf,projectVersion,sizeof(buf));
+	strncat(buf,CUSTOM_VERSION,sizeof(buf));
+	buf[sizeof(buf)-1]=0;
+
 	info->need_fullpath = false;
 #ifdef M_CORE_GB
 	info->valid_extensions = "gba|gb|gbc|sgb";
 #else
 	info->valid_extensions = "gba";
 #endif
-	info->library_version = projectVersion;
+	info->library_version = buf;
 	info->library_name = projectName;
 	info->block_extract = false;
 }
