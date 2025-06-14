@@ -111,6 +111,32 @@ static int32_t audioLowPassRange = 0;
 static int32_t audioLowPassLeftPrev = 0;
 static int32_t audioLowPassRightPrev = 0;
 
+#define TURBO_A 0
+#define TURBO_B 1
+#define TURBO_L 2
+#define TURBO_R 3
+#define TURBO_START 4
+#define TURBO_SELECT 5
+#define TURBO_BUTTONS 6
+
+typedef struct TurboWork_{
+	uint32_t keyidx;
+	uint32_t counter;
+	uint32_t speed;
+	uint32_t dstbtn;
+	uint32_t srcbtn;
+	const char* config;
+} TurboWork;
+static TurboWork turboWork[TURBO_BUTTONS]={
+	{0,0,0x2800,RETRO_DEVICE_ID_JOYPAD_A,RETRO_DEVICE_ID_JOYPAD_X,"mgba_turbo_speed_a"},
+	{1,0,0x2800,RETRO_DEVICE_ID_JOYPAD_B,RETRO_DEVICE_ID_JOYPAD_Y,"mgba_turbo_speed_b"},
+	{9,0,0x2800,RETRO_DEVICE_ID_JOYPAD_L,RETRO_DEVICE_ID_JOYPAD_L2,"mgba_turbo_speed_l"},
+	{8,0,0x2800,RETRO_DEVICE_ID_JOYPAD_R,RETRO_DEVICE_ID_JOYPAD_R2,"mgba_turbo_speed_r"},
+	{3,0,0x2800,RETRO_DEVICE_ID_JOYPAD_START,RETRO_DEVICE_ID_JOYPAD_G2,"mgba_turbo_speed_start"},
+	{2,0,0x2800,RETRO_DEVICE_ID_JOYPAD_SELECT,RETRO_DEVICE_ID_JOYPAD_G1,"mgba_turbo_speed_select"},
+};
+static unsigned turbo_ratio=0x8000;
+
 static const int keymap[] = {
 	RETRO_DEVICE_ID_JOYPAD_A,
 	RETRO_DEVICE_ID_JOYPAD_B,
@@ -451,16 +477,22 @@ void retro_init(void) {
 	environCallback(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt);
 
 	struct retro_input_descriptor inputDescriptors[] = {
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A, "A" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B, "B" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT, "Select" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START, "Start" },
 		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "Right" },
 		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT, "Left" },
 		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP, "Up" },
 		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN, "Down" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R, "R" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A, "A" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B, "B" },
 		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L, "L" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R, "R" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START, "Start" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT, "Select" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X,  "Turbo A" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y,  "Turbo B" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2, "Turbo L" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2, "Turbo R" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_G2, "Turbo Start" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_G1, "Turbo Select" },
 		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3, "Brighten Solar Sensor" },
 		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3, "Darken Solar Sensor" },
 		{ 0 }
@@ -573,6 +605,23 @@ void retro_run(void) {
 			core->reloadConfigOption(core, "frameskip", NULL);
 		}
 
+		// turbo speed 
+		for(TurboWork* tw=&turboWork[0];tw<&turboWork[TURBO_BUTTONS];++tw){
+			var.key = tw->config;
+			if (environCallback(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+			{
+				tw->speed=atoi(var.value)*0x800;
+			}
+			else tw->speed=0x2800;
+		}
+
+		var.key = "mgba_turbo_ratio";
+		if (environCallback(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+		{
+			turbo_ratio=0x10000-(atoi(var.value)*0x1000)&0xffff;
+		}
+		else turbo_ratio=0x8000;
+
 #ifdef M_CORE_GB
 		_updateGbPal();
 #endif
@@ -590,6 +639,20 @@ void retro_run(void) {
 			keys |= (!!inputCallback(0, RETRO_DEVICE_JOYPAD, 0, keymap[i])) << i;
 		}
 	}
+
+	for(TurboWork* tw=&turboWork[0];tw<&turboWork[TURBO_BUTTONS];++tw){
+		if(inputCallback(0, RETRO_DEVICE_JOYPAD, 0, tw->srcbtn)){
+			if(!tw->speed)keys|=1<<tw->keyidx;
+			else{
+				tw->counter-=tw->speed;
+				if((tw->counter&0xffff)>=turbo_ratio)keys|=1<<tw->keyidx;
+			}
+		}
+		else{
+			tw->counter=0;
+		}
+	}	
+
 	core->setKeys(core, keys);
 
 	if (!luxSensorUsed) {
